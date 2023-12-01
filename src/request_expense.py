@@ -14,8 +14,8 @@ cookie = open("data/cookie.txt", "r").read()
 
 
 def update_cookie(new_cookie):
-    global cookie
-    cookie = new_cookie
+    with open("data/cookie.txt", "w") as f:
+        f.write(new_cookie)
 
 
 class ExpenseGetSave:
