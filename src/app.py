@@ -173,6 +173,13 @@ def get_entries():
     )
     return jsonify(csv_gen.get_entries_by_time(start_time, end_time))
 
+@app.route("/get_no_types", methods=["GET"])
+def get_no_types():
+    no_type, templates = csv_gen.get_no_types()
+    if len(no_type) == 0:
+        return jsonify({"success": False, "error": "no no_type items"})
+    return jsonify({"success": True, "no_type": no_type, "templates": templates})
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5500)

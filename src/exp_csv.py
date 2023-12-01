@@ -218,19 +218,39 @@ def update_types(types: dict) -> bool:
     try:
         exp_types: dict = json.load(open(type_file, "r"))["stores"]
         templates: list = json.load(open(type_file, "r"))["templates"]
+        no_types: set = set(json.load(open(type_file, "r"))["no_type"])
     except json.decoder.JSONDecodeError:
         return False
     exp_types.update(types)
-    for store in types.values():
-        if store not in templates:
-            templates.append(store)
+    for new_template in types.values():
+        if new_template not in templates:
+            templates.append(new_template)
+    for store in types.keys():
+        if store in no_types:
+            no_types.remove(store)
     json.dump(
-        {"stores": exp_types, "templates": list(templates)},
+        {"stores": exp_types, "templates": templates, "no_type": list(no_types)},
         open(type_file, "w"),
         ensure_ascii=False,
         indent=2,
     )
     return True
+
+
+def write_no_types(stores: set) -> None:
+    types = json.load(open("data/expenses-type.json", "r"))
+    types["no_type"] = list(stores)
+    json.dump(
+        types,
+        open("data/expenses-type.json", "w"),
+        ensure_ascii=False,
+        indent=2,
+    )
+
+
+def get_no_types() -> tuple[list, list]:
+    types = json.load(open("data/expenses-type.json", "r"))
+    return types["no_type"], types["templates"]
 
 
 if __name__ == "__main__":
