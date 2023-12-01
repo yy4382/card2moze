@@ -57,17 +57,18 @@ def run_by_entry(entries):
 
 def entries2csv_str(entries):
     csv_dict = []
-    no_type_stores = []
+    no_type_stores = set()
     for entry in entries:
-        entry["time"] = trans_date(entry["time"]) if type(entry["time"]) is str else entry["time"]
+        entry["time"] = trans_date(entry["time"], to_datetime=True)
         try:
             csv_dict.append(_entry_to_csv(entry))
         except NoTypeException:
-            no_type_stores.append(entry["name"])
+            no_type_stores.add(entry["name"])
+    if len(no_type_stores) > 0:
+        write_no_types(no_type_stores)
+        raise RequestTypeException("request for types", list(no_type_stores))
     if len(csv_dict) == 0:
         raise NoEntryException("No entry found")
-    if len(no_type_stores) > 0:
-        raise RequestTypeException("request for types", no_type_stores)
     from io import StringIO
 
     output = StringIO()
@@ -152,10 +153,16 @@ def trans_date(d, *, to_str=None, to_datetime=None):
     if to_str is True:
         return d if type(d) is str else d.strftime("%Y-%m-%d %H:%M:%S")
     if to_datetime is True:
-        try:
-            return d if type(d) is datetime else datetime.strptime(d, "%Y-%m-%d %H:%M:%S")
-        except ValueError:
-            return d if type(d) is datetime else datetime.strptime(d, "%Y-%m-%d")
+        if isinstance(d, datetime):
+            return d
+        if isinstance(d, str):
+            try:
+                return datetime.strptime(d, "%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                try:
+                    return datetime.strptime(d, "%Y-%m-%d")
+                except ValueError:
+                    raise ValueError("Invalid date format")
     if type(d) is str:
         try:
             return datetime.strptime(d, "%Y-%m-%d %H:%M:%S")
@@ -218,19 +225,39 @@ def update_types(types: dict) -> bool:
     try:
         exp_types: dict = json.load(open(type_file, "r"))["stores"]
         templates: list = json.load(open(type_file, "r"))["templates"]
+        no_types: set = set(json.load(open(type_file, "r"))["no_type"])
     except json.decoder.JSONDecodeError:
         return False
     exp_types.update(types)
-    for store in types.values():
-        if store not in templates:
-            templates.append(store)
+    for new_template in types.values():
+        if new_template not in templates:
+            templates.append(new_template)
+    for store in types.keys():
+        if store in no_types:
+            no_types.remove(store)
     json.dump(
-        {"stores": exp_types, "templates": list(templates)},
+        {"stores": exp_types, "templates": templates, "no_type": list(no_types)},
         open(type_file, "w"),
         ensure_ascii=False,
         indent=2,
     )
     return True
+
+
+def write_no_types(stores: set) -> None:
+    types = json.load(open("data/expenses-type.json", "r"))
+    types["no_type"] = list(stores)
+    json.dump(
+        types,
+        open("data/expenses-type.json", "w"),
+        ensure_ascii=False,
+        indent=2,
+    )
+
+
+def get_no_types() -> tuple[list, list]:
+    types = json.load(open("data/expenses-type.json", "r"))
+    return types["no_type"], types["templates"]
 
 
 if __name__ == "__main__":

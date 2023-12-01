@@ -5,8 +5,9 @@ from exp_csv import trans_date
 import requests
 
 
-def run(start_time: datetime = None):
+def run(start_time=None):
     ExpenseGetSave(start_time)
+
 
 try:
     cookie = open("data/cookie.txt", "r").read()
@@ -14,8 +15,9 @@ except FileNotFoundError:
     cookie = ""
 
 
-
 def update_cookie(new_cookie):
+    if type(new_cookie) != str or len(new_cookie) == 0:
+        raise ValueError("Invalid cookie")
     with open("data/cookie.txt", "w") as f:
         f.write(new_cookie)
 
@@ -93,7 +95,7 @@ class ExpenseGetSave:
                 retry_count += 1
                 time.sleep(1)  # Wait for 1 second before retrying
 
-        if retry_count == 3:
+        if retry_count == 3 or response_json is None:
             raise ConnectionError("Failed to make the request after 3 attempts")
 
         expenses = []
