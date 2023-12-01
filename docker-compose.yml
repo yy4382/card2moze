@@ -1,9 +1,9 @@
 version: '3'
 services:
   card2moze:
-    # use ghcr.io/yy4382/card2moze:master 
+    # use ghcr.io/yy4382/card2moze:dev 
     # if you want to use the dev version
-    image: ghcr.io/yy4382/card2moze:release
+    image: ghcr.io/yy4382/card2moze:master
     container_name: card2moze
     restart: always
     ports:
