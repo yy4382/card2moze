@@ -16,6 +16,8 @@ except FileNotFoundError:
 
 
 def update_cookie(new_cookie):
+    if type(new_cookie) != str or len(new_cookie) == 0:
+        raise ValueError("Invalid cookie")
     with open("data/cookie.txt", "w") as f:
         f.write(new_cookie)
 
