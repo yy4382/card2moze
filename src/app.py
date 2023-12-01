@@ -110,8 +110,16 @@ def update_cookie():
 
 @app.route("/get_entries", methods=["GET"])
 def get_entries():
-    start_time = str(request.args.get("start_time")) if "start_time" in request.args else None
-    end_time = str(request.args.get("end_time")) if "end_time" in request.args else None
+    start_time = (
+        datetime.fromtimestamp(int(request.args.get("start_time")) / 1000)
+        if "start_time" in request.args
+        else None
+    )
+    end_time = (
+        datetime.fromtimestamp(int(request.args.get("end_time")) / 1000)
+        if "end_time" in request.args
+        else None
+    )
     return jsonify(csv_gen.get_entries_by_time(start_time, end_time))
 
 
