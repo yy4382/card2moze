@@ -1,0 +1,14 @@
+version: '3'
+services:
+  card2moze:
+    # use ghcr.io/yy4382/card2moze:master 
+    # if you want to use the dev version
+    image: ghcr.io/yy4382/card2moze:release
+    container_name: card2moze
+    restart: always
+    ports:
+      - 5500:5500
+    volumes:
+      - ./data:/app/data
+      - ./dist:/app/dist
+
