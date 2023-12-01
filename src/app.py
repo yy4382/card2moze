@@ -33,12 +33,12 @@ def get_csv_by_time():
     """通过起止两个URL参数获取csv文件
 
     Arguments:
-    
+
         - start_time {str} -- 起始时间，时间戳，单位毫秒
         - end_time {str} -- 结束时间，时间戳，单位毫秒
 
     Returns:
-        
+
         - success {bool} -- 是否成功
         - csv {str} -- （若成功）csv文件的字符串
         - start_time {str} -- （若成功）起始时间，时间戳，单位毫秒
@@ -46,16 +46,14 @@ def get_csv_by_time():
         - error {str} -- （若失败）错误信息
         - stores {list} -- （若失败）缺少类型的商店列表
     """
-    start_time = (
-        datetime.fromtimestamp(int(request.args.get("start_time")) / 1000)
-        if "start_time" in request.args
-        else None
-    )
-    end_time = (
-        datetime.fromtimestamp(int(request.args.get("end_time")) / 1000)
-        if "end_time" in request.args
-        else None
-    )
+    if "start_time" not in request.args or "end_time" not in request.args:
+        return jsonify({"success": False, "error": "No time provided"})
+    try:
+        start_time = datetime.fromtimestamp(int(request.args.get("start_time")) / 1000)  # type: ignore
+        end_time = datetime.fromtimestamp(int(request.args.get("end_time")) / 1000)  # type: ignore
+    except Exception:
+        return jsonify({"success": False, "error": "Time provided may be wrong"})
+
     try:
         csv: str = csv_gen.run_by_time(start_time, end_time)
     except csv_gen.NoEntryException:
@@ -89,7 +87,12 @@ def get_csv_by_entry():
         如果未找到条目，则响应将指示失败，并附带错误消息。
         如果存在请求类型异常，则响应将指示失败，并附带错误消息和受影响的商店。
     """
-    entries = request.json
+    try:
+        entries: list = request.json if request.json is not None else []
+        if len(entries) == 0:
+            raise Exception
+    except Exception:
+        return jsonify({"success": False, "error": "entry provided may be wrong"})
     for entry in entries:
         entry["time"] = trans_date(entry["time"])
     try:
@@ -122,6 +125,8 @@ def update_types():
         A JSON response indicating the success of the update.
     """
     types = request.json
+    if types is None:
+        return jsonify({"success": False, "error": "No types provided"})
     success = csv_gen.update_types(types)
     return jsonify({"success": success})
 
@@ -140,7 +145,7 @@ def update_entries():
         json: 包含更新成功与否的信息的字典。
     """
     start_time = (
-        datetime.fromtimestamp(int(request.args.get("start_time")) / 1000)
+        datetime.fromtimestamp(int(request.args.get("start_time")) / 1000)  # type: ignore
         if "start_time" in request.args
         else None
     )
@@ -154,24 +159,33 @@ def update_entries():
 
 @app.route("/update_cookie", methods=["POST"])
 def update_cookie():
-    cookie = request.json["cookie"]
-    rq.update_cookie(cookie)
+    try:
+        if request.json is None:
+            raise KeyError
+        cookie = request.json["cookie"]
+    except KeyError:
+        return jsonify({"success": False, "error": "No cookie provided"})
+    try:
+        rq.update_cookie(cookie)
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)})
     return jsonify({"success": True})
 
 
 @app.route("/get_entries", methods=["GET"])
 def get_entries():
     start_time = (
-        datetime.fromtimestamp(int(request.args.get("start_time")) / 1000)
+        datetime.fromtimestamp(int(request.args.get("start_time")) / 1000) # type: ignore
         if "start_time" in request.args
         else None
     )
     end_time = (
-        datetime.fromtimestamp(int(request.args.get("end_time")) / 1000)
+        datetime.fromtimestamp(int(request.args.get("end_time")) / 1000) # type: ignore
         if "end_time" in request.args
         else None
     )
     return jsonify(csv_gen.get_entries_by_time(start_time, end_time))
+
 
 @app.route("/get_no_types", methods=["GET"])
 def get_no_types():
