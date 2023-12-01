@@ -8,8 +8,10 @@ import requests
 def run(start_time: datetime = None):
     ExpenseGetSave(start_time)
 
-
-cookie = open("data/cookie.txt", "r").read()
+try:
+    cookie = open("data/cookie.txt", "r").read()
+except FileNotFoundError:
+    cookie = ""
 
 
 
