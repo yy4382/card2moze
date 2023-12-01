@@ -19,18 +19,33 @@ cors = CORS(
 
 
 @app.route("/")
-def index():
-    return send_from_directory(os.getcwd()+"/dist", "index.html")
+def main_page():
+    return send_from_directory(os.getcwd() + "/dist", "index.html")
+
 
 @app.route("/<path:path>")
-def root(path):
-    dist_path = os.path.abspath("dist")
-    print(dist_path)
-    return send_from_directory(os.getcwd()+"/dist", path)
+def route_dist(path):
+    return send_from_directory(os.getcwd() + "/dist", path)
 
 
 @app.route("/get_csv", methods=["GET"])
 def get_csv_by_time():
+    """通过起止两个URL参数获取csv文件
+
+    Arguments:
+    
+        - start_time {str} -- 起始时间，时间戳，单位毫秒
+        - end_time {str} -- 结束时间，时间戳，单位毫秒
+
+    Returns:
+        
+        - success {bool} -- 是否成功
+        - csv {str} -- （若成功）csv文件的字符串
+        - start_time {str} -- （若成功）起始时间，时间戳，单位毫秒
+        - end_time {str} -- （若成功）结束时间，时间戳，单位毫秒
+        - error {str} -- （若失败）错误信息
+        - stores {list} -- （若失败）缺少类型的商店列表
+    """
     start_time = (
         datetime.fromtimestamp(int(request.args.get("start_time")) / 1000)
         if "start_time" in request.args
@@ -59,6 +74,21 @@ def get_csv_by_time():
 
 @app.route("/get_csv", methods=["POST"])
 def get_csv_by_entry():
+    """根据提供的条目检索CSV数据。
+
+    Args:
+        entries (list): 条目列表，每个条目都是一个字典，包含以下键：
+            - name (str): 商店名称
+            - amount (str): 金额
+            - time (str): 时间
+            - balance (str): 余额
+            - id (str): 交易ID
+
+    Returns:
+        包含成功状态、CSV数据、开始时间和结束时间的JSON响应。
+        如果未找到条目，则响应将指示失败，并附带错误消息。
+        如果存在请求类型异常，则响应将指示失败，并附带错误消息和受影响的商店。
+    """
     entries = request.json
     for entry in entries:
         entry["time"] = trans_date(entry["time"])
@@ -81,6 +111,16 @@ def get_csv_by_entry():
 
 @app.route("/update_types", methods=["POST"])
 def update_types():
+    """
+    Update the types of stores.
+
+    This function receives a JSON object containing the updated types of stores.
+    It then calls the `update_types` function from the `csv_gen` module to update the types in the CSV file.
+    Finally, it returns a JSON response indicating the success of the update.
+
+    Returns:
+        A JSON response indicating the success of the update.
+    """
     types = request.json
     success = csv_gen.update_types(types)
     return jsonify({"success": success})
@@ -88,6 +128,17 @@ def update_types():
 
 @app.route("/update_entries", methods=["GET"])
 def update_entries():
+    """
+    更新条目。
+
+    根据请求参数中的 start_time 更新条目。如果请求参数中没有 start_time，则从已有数据的最后开始更新。
+
+    Raises:
+        ConnectionError: 如果发生连接错误。
+
+    Returns:
+        json: 包含更新成功与否的信息的字典。
+    """
     start_time = (
         datetime.fromtimestamp(int(request.args.get("start_time")) / 1000)
         if "start_time" in request.args
@@ -110,8 +161,16 @@ def update_cookie():
 
 @app.route("/get_entries", methods=["GET"])
 def get_entries():
-    start_time = str(request.args.get("start_time")) if "start_time" in request.args else None
-    end_time = str(request.args.get("end_time")) if "end_time" in request.args else None
+    start_time = (
+        datetime.fromtimestamp(int(request.args.get("start_time")) / 1000)
+        if "start_time" in request.args
+        else None
+    )
+    end_time = (
+        datetime.fromtimestamp(int(request.args.get("end_time")) / 1000)
+        if "end_time" in request.args
+        else None
+    )
     return jsonify(csv_gen.get_entries_by_time(start_time, end_time))
 
 
