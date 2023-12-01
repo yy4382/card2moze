@@ -19,14 +19,13 @@ cors = CORS(
 
 
 @app.route("/")
-def index():
-    return send_from_directory(os.getcwd()+"/dist", "index.html")
+def main_page():
+    return send_from_directory(os.getcwd() + "/dist", "index.html")
+
 
 @app.route("/<path:path>")
-def root(path):
-    dist_path = os.path.abspath("dist")
-    print(dist_path)
-    return send_from_directory(os.getcwd()+"/dist", path)
+def route_dist(path):
+    return send_from_directory(os.getcwd() + "/dist", path)
 
 
 @app.route("/get_csv", methods=["GET"])
